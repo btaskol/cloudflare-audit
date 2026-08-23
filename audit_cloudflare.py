@@ -2,12 +2,13 @@ import os
 import requests
 import sys
 
-# Obtener variables de entorno inyectadas por GitHub Actions
+# 1. Cambiamos ZONE_ID por ACCOUNT_ID
 API_TOKEN = os.environ.get("CF_API_TOKEN")
-ZONE_ID = os.environ.get("CF_ZONE_ID")
+ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
+WORKER_NAME = "billing-receipt-system"
 
-if not API_TOKEN or not ZONE_ID:
-    print("[!] Error: Faltan las credenciales CF_API_TOKEN o CF_ZONE_ID.")
+if not API_TOKEN or not ACCOUNT_ID:
+    print("[!] Error: Faltan las credenciales CF_API_TOKEN o CF_ACCOUNT_ID en los secrets.")
     sys.exit(1)
 
 HEADERS = {
@@ -15,39 +16,39 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-def check_tls_version():
-    url = f"https://api.cloudflare.com/client/v4/zones/{ZONE_ID}/settings/min_tls_version"
+def audit_worker_code():
+    """Descarga el código actual del Worker desde Cloudflare para analizarlo."""
+    url = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/workers/scripts/{WORKER_NAME}"
+    
+    print(f"[*] Descargando código del Worker: {WORKER_NAME}...")
     response = requests.get(url, headers=HEADERS)
     
     if response.status_code == 200:
-        tls_value = response.json()['result']['value']
-        if tls_value not in ["1.2", "1.3"]:
-            print(f"[ALERTA 🔴] Versión TLS mínima insegura detectada: {tls_value}. Debería ser 1.2 o 1.3")
+        code_content = response.text
+        print("[OK 🟢] Código del Worker descargado correctamente.")
+        
+        # --- AQUÍ APLICAS TUS COMPROBACIONES O INTEGRACIÓN CON CLAUDE ---
+        # Ejemplo básico de validación estática local:
+        if "eval(" in code_content:
+            print("[ALERTA 🔴] Se detectó el uso inseguro de 'eval()' en el código.")
             return False
-        else:
-            print(f"[OK 🟢] Versión TLS correcta: {tls_value}")
-            return True
-    return False
-
-def check_waf_rules():
-    # Aquí puedes añadir la lógica para verificar si las reglas gestionadas están en modo 'block'
-    print("[INFO 🔵] Verificando reglas de WAF (Pendiente de implementar)...")
-    return True
+            
+        if "console.log" in code_content:
+            print("[AVISO 🟡] Hay llamadas a 'console.log', asegúrate de no filtrar datos sensibles.")
+            
+        return True
+    else:
+        print(f"[!] Error al obtener el Worker de la API ({response.status_code}): {response.text}")
+        return False
 
 if __name__ == "__main__":
-    print(f"Iniciando auditoría CSPM para la zona: {ZONE_ID}\n")
+    print(f"Iniciando auditoría para la cuenta: {ACCOUNT_ID}\n")
     
-    tls_secure = check_tls_version()
-    waf_secure = check_waf_rules()
+    code_secure = audit_worker_code()
     
-    # Además de auditar la seguridad, este mismo flujo puede consultar la API GraphQL 
-    # de Cloudflare para monitorizar tus reglas de caché. Extraer estos datos a diario es ideal 
-    # para recopilar la evidencia necesaria que demuestre de forma continuada cómo el uso 
-    # del caching está absorbiendo el tráfico y ahorrando costes en la infraestructura.
-    
-    if not tls_secure or not waf_secure:
-        print("\n[!] La auditoría ha fallado. Revisa las alertas arriba.")
-        sys.exit(1) # Esto hace que el pipeline de GitHub Actions marque un error (cruz roja)
+    if not code_secure:
+        print("\n[!] La auditoría del Worker ha fallado.")
+        sys.exit(1)
     else:
-        print("\n[ÉXITO] Auditoría completada sin fallos críticos de configuración.")
+        print("\n[ÉXITO] Auditoría del Worker completada sin problemas críticos.")
         sys.exit(0)
