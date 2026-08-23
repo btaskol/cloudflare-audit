@@ -2,9 +2,11 @@ name: Cloudflare Security Posture Audit
 
 on:
   schedule:
-    # Se ejecuta todos los días a las 08:00 UTC
     - cron: '0 8 * * *'
-  workflow_dispatch: # Permite ejecución manual
+  workflow_dispatch:
+
+permissions:
+  contents: write # 👈 Necesario para que el script pueda guardar y subir el reporte al repo
 
 jobs:
   audit-cloudflare:
@@ -22,22 +24,10 @@ jobs:
       - name: 📦 Instalar dependencias
         run: pip install requests
 
-      - name: 🔍 Ejecutar auditoría de Cloudflare
-        id: run_audit
+      - name: 🔍 Ejecutar auditoría de Cloudflare con IA
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }} # Tu API Key gratuita de Groq
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Token automático de GitHub
         run: python audit_cloudflare.py
-
-      - name: 📧 Enviar reporte a Gmail
-        # Esta acción oficial envía correos vía SMTP (puedes usar una App Password de Gmail)
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.GMAIL_USER }}
-          password: ${{ secrets.GMAIL_APP_PASSWORD }}
-          subject: "Reporte Diario - Auditoría Cloudflare Worker 🛡️"
-          body: "La auditoría diaria de tu Cloudflare Worker (billing-receipt-system) se ha ejecutado correctamente. Revisa los logs de GitHub Actions para más detalles."
-          to: ${{ secrets.GMAIL_USER }}
-          from: GitHub Actions <no-reply@github.com>
