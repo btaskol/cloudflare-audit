@@ -51,7 +51,7 @@ def audit_code_with_ai(code_content):
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "llama3-70b-8192", # 👈 Usa este modelo activo
+        "model": "llama-3.3-70b-versatile",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.1
     }
