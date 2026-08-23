@@ -30,13 +30,13 @@ def get_cloudflare_worker_code():
 def audit_code_with_ai(code_content):
     print("[*] Analizando código con IA (Auditoría de Seguridad)...")
     
-    # Trunca el contenido del worker si es demasiado extenso para la API
+    # Trunca el contenido del worker usando el nombre correcto del parámetro
     max_code_length = 12000
-    worker_code_truncated = worker_code[:max_code_length]
-    
+    code_truncated = code_content[:max_code_length]
+
     prompt = f"""
     Realiza una auditoría de seguridad del siguiente código de Cloudflare Worker:
-    {worker_code_truncated}
+    {code_truncated}
     """
 
     ai_url = "https://api.groq.com/openai/v1/chat/completions"
