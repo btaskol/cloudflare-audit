@@ -35,10 +35,21 @@ def audit_code_with_ai(code_content):
     code_truncated = code_content[:max_code_length]
 
     prompt = f"""
-    Realiza una auditoría de seguridad del siguiente código de Cloudflare Worker:
-    {code_truncated}
-    """
+    Actúa como un Ingeniero Senior de Ciberseguridad especializado en Cloudflare Workers.
+    IMPORTANTE: Este Cloudflare Worker es una aplicación interna de uso exclusivo para EMPLEADOS de la empresa (no es una plataforma pública para clientes). 
+    
+    Analiza el siguiente código fuente en busca de:
+    1. Vulnerabilidades de seguridad (OWASP Top 10, control de acceso interno, fugas de datos).
+    2. Exposición accidental de secretos, API keys o datos sensibles en logs (`console.log`).
+    3. Validación correcta de que las peticiones provienen de la red interna o empleados autorizados.
 
+    Devuelve un reporte estructurado y claro indicando riesgos críticos (ALTO, MEDIO, BAJO) y sugerencias de corrección en formato Markdown.
+
+    CÓDIGO DEL WORKER:
+    ```javascript
+    {code_truncated}
+    ```
+    """
     ai_url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {AI_API_KEY}",
