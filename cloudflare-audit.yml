@@ -1,0 +1,31 @@
+name: Cloudflare Security Posture Audit
+
+on:
+  schedule:
+    # Se ejecuta todos los días a las 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Permite la ejecución manual desde la interfaz de GitHub
+
+jobs:
+  audit-cloudflare:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Instalar dependencias
+        run: pip install requests
+
+      - name: 🔍 Ejecutar auditoría de Cloudflare
+        env:
+          # Las credenciales se inyectan de forma segura desde GitHub Secrets
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: python audit_cloudflare.py
